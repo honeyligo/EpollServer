@@ -47,7 +47,6 @@ Created Time:
 #include "tinyxml.h"
 #include "tinystr.h"
 
-#include "MD5.h"
 #include "Lock.h"
 #include "../Common/Exception.h"
 
@@ -197,18 +196,17 @@ typedef struct FdDataNode {
 	{
 
 	}
-	int recv_len;
 	MessageHeader header;
-	char buf[2048];
 	struct sockaddr_in lan_addr;
-	char wan_addr[32];
-
-	char lan_ip[32];
+	int recv_len;
 	int lan_port;
-
+	bool is_login;
+	char buf[2048];
+	char wan_addr[32];
+	char lan_ip[32];
 	char login_key[32];
 	char pair_key[32];
-	bool is_login;
+
 } FdDataNode;
 
 typedef struct Session {

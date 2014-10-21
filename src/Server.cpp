@@ -15,6 +15,7 @@ Created Time:
 #include "../Common/threadpool.h"
 #include "../Cached/Cached.h"
 #include "../Cached/CachedMgr.h"
+#include "MsgHandler.h"
 #include "Server.h"
 
 #define		MAX_DB_CONNECTION			        100
@@ -63,6 +64,8 @@ void Server::Start(void)
 		 m_heartBeat->SetTimeout(m_timeout);
 		 m_heartBeat->Start();
 		 }*/
+
+		m_handler = std::tr1::shared_ptr<MsgHandler> (new MsgHandler);
 
 		Listener::Start();
 
@@ -147,7 +150,6 @@ void Server::Worker(void* arg)
 	Server* srv = conn->server;
 
 	int connFd, fd;
-	int n;
 	struct sockaddr_in remote;
 	int addrlen;
 
@@ -174,28 +176,14 @@ void Server::Worker(void* arg)
 					TRACE("accept error:%s", strerror(errno));
 			}
 		} else if (fd == conn->udpFd) {
-			int count;//= srv->RecvUDPData(fd);
+			int count = srv->m_handler->RecvUDPData(fd);
 			if (count != 0)
 				srv->AddEvent(conn->epFd, fd, &conn->evInvoke);
 		} else if (conn->evInvoke.events & EPOLLIN) {
-			int count;//= srv->RecvData(fd);
+			int count = srv->m_handler->RecvData(fd);
 
 			if (count != 0)
 				srv->AddEvent(conn->epFd, fd, &conn->evInvoke);
-		} else if (conn->evInvoke.events & EPOLLOUT) {
-			while (n > 0) {
-				TRACE("send to fd:%d in thread:%u", fd, pthread_self());
-				int nwrite = write(fd, "Hello", 6);
-				if (nwrite < n) {
-					if (nwrite == -1 && errno != EAGAIN) {
-						TRACE("write error");
-					}
-					break;
-				}
-				n -= nwrite;
-			}
-
-			srv->AddEvent(conn->epFd, fd, &conn->evInvoke);
 		}
 
 	CATCH_(ServerErrorException, "Worker failed");

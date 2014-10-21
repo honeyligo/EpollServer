@@ -86,10 +86,9 @@ protected:
 protected:
 	bool m_isBindPort;
 	int m_port;
+	int m_udpPort;
 	int m_listenFd;
 	int m_udpFd;
-	int m_udpPort;
-
 }; // End class Listener
 
 #endif // __LISTENER__H__

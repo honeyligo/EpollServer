@@ -14,8 +14,12 @@ Created Time:
 #include "Listener.h"
 
 // public
-Listener::Listener(const int& port, const int& udpPort) :
-	m_isBindPort(false), m_port(port), m_udpPort(udpPort), m_listenFd(0)
+Listener::Listener(const int& port, const int& udpPort)
+	: m_isBindPort(false)
+	, m_port(port)
+	, m_udpPort(udpPort)
+	, m_listenFd(0)
+	, m_udpFd(0)
 {
 
 }

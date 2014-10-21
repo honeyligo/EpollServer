@@ -46,5 +46,5 @@ void HeartBeatController::SetInterval(int interval)
 void*
 HeartBeatController::CheckTimeout(void* args)
 {
-
+	return NULL;
 }

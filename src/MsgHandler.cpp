@@ -98,8 +98,8 @@ int MsgHandler::RecvData(int fd)
 
 		while (m_node[fd].recv_len > HEADER_LEN) {
 			MessageHeader *header = (MessageHeader*) m_node[fd].buf;
-			unsigned int body_len = ntohl(header->body_len);
-			unsigned int tran_code = ntohl(header->tran_code);
+			int body_len = ntohl(header->body_len);
+			int tran_code = ntohl(header->tran_code);
 
 			if (m_node[fd].recv_len >= body_len + HEADER_LEN) {
 				Param param;
@@ -136,7 +136,7 @@ void MsgHandler::ClearSessions(int fd)
 
 int MsgHandler::RecvUDPData(int fd)
 {
-
+	return 0;
 }
 
 void MsgHandler::SendMessage(int fd, const string& json, int tranCode,

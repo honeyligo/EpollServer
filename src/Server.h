@@ -21,11 +21,10 @@ Created Time:
 #include <tr1/memory>
 #include "../Common/Common.h"
 #include "Listener.h"
-#include "MsgHandler.h"
 
 struct threadpool_t;
 class HeartBeatController;
-
+class MsgHandler;
 
 #define MAX_EVENTS 1024*1024
 
@@ -113,6 +112,7 @@ private:
 	struct epoll_event m_ev;
 	struct epoll_event m_events[MAX_EVENTS];
 	std::tr1::shared_ptr<HeartBeatController> m_heartBeat;
+	std::tr1::shared_ptr<MsgHandler> m_handler;
 }; // End class Server
 
 #endif // __SERVER_H__
