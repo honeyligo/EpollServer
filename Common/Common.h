@@ -162,7 +162,7 @@ typedef struct Param {
 		memset(login_key, 0, 32);
 		memset(pair_key, 0, 32);
 		memset(robot_sn, 0, 32);
-		memset(phone_no, 0, 32);
+		memset(user_name, 0, 32);
 	}
 	int msg_type;
 	int data_len;
@@ -178,7 +178,7 @@ typedef struct Param {
 	char login_key[32];
 	char pair_key[32];
 	char robot_sn[32];
-	char phone_no[32];
+	char user_name[32];
 } Param;
 
 typedef struct FdDataNode {
@@ -215,7 +215,7 @@ typedef struct Session {
 	{
 		memset(wan_addr, 0, 32);
 		memset(robot_sn, 0, 32);
-		memset(phone_no, 0, 32);
+		memset(user_name, 0, 32);
 	}
 	int fd;
 	int power;
@@ -226,7 +226,7 @@ typedef struct Session {
 	int wan_port;
 
 	char robot_sn[32];
-	char phone_no[32];
+	char user_name[32];
 
 	bool udp_received;
 } Session;
@@ -287,6 +287,10 @@ public:
 
 };
 
+/* message id*/
+
+#define USER_LOGIN		2001
+#define HEART_BEAT		3001
 
 /* macros */
 

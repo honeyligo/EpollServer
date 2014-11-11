@@ -1,9 +1,15 @@
-//
-//  @ File Name : CachedMgr.cpp 
-//  @ Date : 2014/6/5
-//  @ Author : bin.li@flyingwings.cn
-//
+/****************************************************************************************************
+CachedMgr.cpp
 
+Purpose:
+	implementation of cached manager
+
+Author:
+	Wookong
+
+Created Time:
+	2014-6-5
+****************************************************************************************************/
 #include "Cached.h"
 #include "CachedMgr.h"
 

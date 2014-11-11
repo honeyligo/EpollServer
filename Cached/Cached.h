@@ -1,8 +1,15 @@
-//
-//  @ File Name : Cached.h 
-//  @ Date : 2014/6/5
-//  @ Author : bin.li@flyingwings.cn
-//
+/****************************************************************************************************
+Cached.h
+
+Purpose:
+	memcached interfaces define
+
+Author:
+	Wookong
+
+Created Time:
+	2014-6-5
+****************************************************************************************************/
 
 #ifndef __CACHED__H__
 #define __CACHED__H__

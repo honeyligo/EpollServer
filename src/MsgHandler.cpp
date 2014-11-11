@@ -19,7 +19,7 @@ Created Time:
 #define  	HEADER_LEN 					120
 #define 	CLIENT 						(CachedMgr::getInstance()->GetHandler())
 #define		FD_DATA_NODE_COUNT		                2048
-//using namespace ZDB;
+using namespace ZDB;
 //using namespace boost;
 
 MsgHandler::MsgHandler()
@@ -46,7 +46,181 @@ MsgHandler::~MsgHandler()
 
 void MsgHandler::ProcessUserLogin(const Param& param)
 {
+	TRACE("Begin");
+	char *pData = param.pData;
+	int fd = param.fd;
+	int data_len = param.data_len;
 
+	Json::Reader reader;
+	Json::Value value;
+
+	TRY_
+		string data(pData, data_len);
+		TRACE("input data: %s", data.c_str());
+		if (reader.parse(data, value))
+		{
+			string user_name = value["user_name"].asString();
+			string password = value["passwd"].asString();
+
+			string sql = "select id, flag_password from user where user_name = '"
+					+ user_name + "' and password = '" + password + "'";
+
+			TRACE("sql: %s", sql.c_str());
+
+			AutoLock<ThreadMutexLock> lock(&m_lock);
+			ZDB::ResultSet* rs;
+			IDBOperator* p = NULL;
+			{
+				m_dbp->SetQuery(sql);
+				rs = m_dbp->ExecQuery(p);
+			}
+			if (rs->next())
+			{
+				/* insert ONLINE user into map */
+				{
+					AutoLock<ThreadMutexLock> lock_(&m_lock);
+					std::map<string, Session>::iterator it = m_user.find(user_name);
+					if (it != m_user.end())
+					{
+						// clear power of robot
+						std::map<string, Session>::iterator it_robot = m_robot.find(
+								(*it).second.robot_sn);
+						if (it_robot != m_robot.end())
+						{
+							(*it_robot).second.power = 0;
+							(*it_robot).second.udp_received = false;
+						}
+
+						if (m_user[user_name].fd != fd)
+						{
+							// close the former fd
+							close(m_user[user_name].fd);
+
+							// clear all session of the former user
+							TRACE("old fd:%d", m_user[user_name].fd);
+							//delete (*it).second;
+							m_user.erase(user_name);
+						}
+					}
+
+					// update status
+					m_node[fd].is_login = true;
+
+					Session session;
+					TRACE("session.udp_received:%d", session.udp_received);
+					session.fd = fd;
+					std::pair<std::map<string, Session>::iterator, bool> ret =
+							m_user.insert(std::pair<string, Session>(user_name, session));
+					if (ret.second)
+					{
+						TRACE("inserted fd:%d", m_user[user_name].fd);
+					}
+					else
+					{
+						TRACE("inserted failed");
+					}
+				}
+				
+				Json::Value response;
+				response["login_key"] = RandomStringGenerator::generate(32,
+						RandomStringGenerator::RANDOM_TYPE::MIX);
+
+				std::string strValue = response.toStyledString();
+				TRACE("user login response json: %s", strValue.c_str());
+
+				SendMessage(fd, strValue, USER_LOGIN, 0);
+		}
+		else
+		{
+			TRACE("fail to parse json");
+		}CATCH_(ServerErrorException, "ProcessUserLogin failed");
+
+	TRACE("End\n");
+}
+
+void MsgHandler::ProcessRobotHeartBeat(const Param& param)
+{
+TRACE("Begin");
+	char *pData = param.pData;
+	int fd = param.fd;
+	int data_len = param.data_len;
+
+	CHECK_CONNECTION_STATUS(fd);
+
+	Json::Reader reader;
+	Json::Value value;
+
+	TRY_
+		string data(pData, data_len);
+		//TRACE("input data:%s", data.c_str());
+		if (reader.parse(data, value))
+		{
+			string robot_sn = value["robot_sn"].asString();
+			int key = value["key"].asInt();
+			string soft_version = value["soft_version"].asString();
+
+			string sql = "select id from robot where robot_sn = '" + robot_sn + "'";
+			TRACE("robotFd:%d, robot_sn:%s, key:%d, soft_version: %s", fd,
+					robot_sn.c_str(), key, soft_version.c_str());
+
+			AutoLock<ThreadMutexLock> lock(&m_lock);
+			ZDB::ResultSet* rs;
+			IDBOperator* p = NULL;
+			{
+				m_dbp->SetQuery(sql);
+				rs = m_dbp->ExecQuery(p);
+			}
+			if (rs->next())
+			{
+				//insert phone-fd, phone-sn
+				std::map<string, Session>::iterator it;
+				it = m_robot.find(robot_sn);
+				if (it != m_robot.end())
+				{
+					/* reply heart beat */
+					Json::Value heart_beat;
+					heart_beat["robot_sn"] = robot_sn;
+					heart_beat["key"] = key + 1;
+					//heart_beat["soft_version"] = soft_version;
+
+					std::string strValue = heart_beat.toStyledString();
+					//TRACE("reply heartbeat with json body: %s", strValue.c_str());
+					SendMessage(fd, strValue, ROBOT_HEART_BEAT, 0);
+					{
+						AutoLock<ThreadMutexLock> lock_(&m_lock);
+						/* store heart beat time */
+						time_t timer;
+						time(&timer);
+						(*it).second.time = timer;
+					}
+				}
+				else
+				{
+					Json::Value request;
+					request["status"] = 1;
+					request["error_msg"] = "robot doesn't login";
+
+					std::string strValue = request.toStyledString();
+					//TRACE("reply user with json body: %s", strValue.c_str());
+
+					SendMessage(fd, strValue, ROBOT_HEART_BEAT, 1);
+
+					/* close the invalid connection */
+					sleep(100);
+					close(fd);
+				}
+			}
+			else
+			{
+				//close the fd.
+			}
+		}
+		else
+		{
+			TRACE("fail to parse json");
+		}CATCH_(ServerErrorException, "ProcessRobotHeartBeat failed");
+
+	TRACE("End\n");
 }
 
 void MsgHandler::ProcessData(const Param& param)
@@ -57,8 +231,11 @@ void MsgHandler::ProcessData(const Param& param)
 	TRY_
 		if (body_len > 0) {
 			switch (tran_code) {
-			//case USER_LOGIN:
-			//	ProcessUserLogin(param);
+			case USER_LOGIN:
+				ProcessUserLogin(param);
+				break;
+			case HEART_BEAT:
+				ProcessRobotHeartBeat(param);
 				break;
 			default:
 				THROW_E(ServerErrorException, "invalid message");

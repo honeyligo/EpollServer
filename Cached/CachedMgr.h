@@ -1,9 +1,15 @@
-//
-//  @ File Name : CachedMgr.h 
-//  @ Date : 2014/6/5
-//  @ Author : bin.li@flyingwings.cn
-//
+/****************************************************************************************************
+CachedMgr.h
 
+Purpose:
+	CachedMgr.h
+
+Author:
+	Wookong
+
+Created Time:
+	2014-6-5
+****************************************************************************************************/
 
 #ifndef __CACHED__MGR__H__
 #define __CACHED__MGR__H__

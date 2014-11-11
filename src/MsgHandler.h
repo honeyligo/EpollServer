@@ -19,6 +19,8 @@ Created Time:
 #endif
 
 #include <tr1/memory>
+#include <DBOperator.h>
+#include <DBProvider.h>
 #include "../Common/Common.h"
 
 #define MAX_EVENTS 1024*1024
@@ -31,6 +33,8 @@ public:
 	virtual ~MsgHandler();
 
 	void ProcessUserLogin(const Param& param);
+	
+	void ProcessRobotHeartBeat(const Param& param);
 
 	int RecvData(int fd);
 
@@ -58,6 +62,11 @@ private:
 
 	void GetClientAddr(int fd, char* addr);
 
+public:
+	ThreadMutexLock m_lock;
+	map<string, Session> m_robot;
+	map<string, Session> m_user;
+	FdDataNode* m_node;
 private:
 
 	int m_workerSize;
@@ -65,8 +74,6 @@ private:
 	int m_timeout;
 	int m_interval;
 
-	ThreadMutexLock m_lock;
-	FdDataNode* m_node;
 	std::tr1::shared_ptr<HeartBeatController> m_heartBeat;
 };
 

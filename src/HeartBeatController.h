@@ -2,7 +2,6 @@
 #define __HEART_BEAT_CONTROLLER_H__
 
 #include "../Common/Common.h"
-#include "../Common/Lock.h"
 
 class MsgHandler;
 

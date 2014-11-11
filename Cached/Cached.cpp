@@ -1,9 +1,15 @@
-//
-//  @ File Name : Cached.cpp 
-//  @ Date : 2014/6/5
-//  @ Author : bin.li@flyingwings.cn
-//
+/****************************************************************************************************
+Cached.cpp
 
+Purpose:
+	memCached interface implementation
+
+Author:
+	Wookong
+
+Created Time:
+	2014-6-5
+****************************************************************************************************/
 //#include <libmemcached/memory.h>
 
 
