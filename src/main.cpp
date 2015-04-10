@@ -59,18 +59,12 @@ int main()
 			timeout = value["timeout"].asInt();
 			interval = value["interval"].asInt();
 
-			if (tcp_port == 0)
-				tcp_port = TCP_PORT;
-			if (udp_port == 0)
-				udp_port = UDP_PORT;
-			if (pool_size == 0)
-				pool_size = THREAD;
-			if (pool_task == 0)
-				pool_task = QUEUE;
-			if (timeout == 0)
-				timeout = TIMEOUT;
-			if (interval == 0)
-				interval = INTERVAL;
+			tcp_port = (tcp_port == 0) ? TCP_PORT : tcp_port;
+			udp_port = (udp_port == 0) ? UDP_PORT : udp_port;
+			pool_size = (pool_size == 0) ? THREAD : pool_size;
+			pool_task = (pool_task == 0) ? QUEUE : pool_task;
+			timeout = (timeout == 0) ? TIMEOUT : timeout;
+			interval = (interval == 0) ? INTERVAL : interval;
 
 			TRACE("tcp_port: %d, udp_port: %d, pool_size: %d,  pool_task: %d, timeout: %d, interval: %d",
 					tcp_port, udp_port, pool_size, pool_task, timeout, interval);

@@ -63,7 +63,7 @@ void MsgHandler::ProcessUserLogin(const Param& param)
 			string password = value["passwd"].asString();
 
 			string sql = "select id, flag_password from user where user_name = '"
-					+ user_name + "' and password = '" + password + "'";
+				+ user_name + "' and password = '" + password + "'";
 
 			TRACE("sql: %s", sql.c_str());
 
@@ -84,7 +84,7 @@ void MsgHandler::ProcessUserLogin(const Param& param)
 					{
 						// clear power of robot
 						std::map<string, Session>::iterator it_robot = m_robot.find(
-								(*it).second.robot_sn);
+							(*it).second.robot_sn);
 						if (it_robot != m_robot.end())
 						{
 							(*it_robot).second.power = 0;
@@ -110,7 +110,7 @@ void MsgHandler::ProcessUserLogin(const Param& param)
 					TRACE("session.udp_received:%d", session.udp_received);
 					session.fd = fd;
 					std::pair<std::map<string, Session>::iterator, bool> ret =
-							m_user.insert(std::pair<string, Session>(user_name, session));
+						m_user.insert(std::pair<string, Session>(user_name, session));
 					if (ret.second)
 					{
 						TRACE("inserted fd:%d", m_user[user_name].fd);
@@ -120,21 +120,21 @@ void MsgHandler::ProcessUserLogin(const Param& param)
 						TRACE("inserted failed");
 					}
 				}
-				
+
 				Json::Value response;
 				response["login_key"] = RandomStringGenerator::generate(32,
-						RandomStringGenerator::RANDOM_TYPE::MIX);
+					RandomStringGenerator::RANDOM_TYPE::MIX);
 
 				std::string strValue = response.toStyledString();
 				TRACE("user login response json: %s", strValue.c_str());
 
 				SendMessage(fd, strValue, USER_LOGIN, 0);
+			}
+			else
+			{
+				TRACE("fail to parse json");
+			}CATCH_(ServerErrorException, "ProcessUserLogin failed");
 		}
-		else
-		{
-			TRACE("fail to parse json");
-		}CATCH_(ServerErrorException, "ProcessUserLogin failed");
-
 	TRACE("End\n");
 }
 
@@ -313,18 +313,111 @@ void MsgHandler::ClearSessions(int fd)
 
 int MsgHandler::RecvUDPData(int fd)
 {
-	return 0;
+	MessageHeader *header;
+	unsigned int body_len;
+	unsigned int tran_code;
+
+	struct sockaddr_in remote;
+	int addrlen = sizeof(remote);
+	char buf[2048];
+	memset(buf, 0, 2048);
+	bzero((char*)&remote, sizeof(remote));
+	int count = recvfrom(fd, buf, 2048, 0, (struct sockaddr *) &remote,
+		(socklen_t *)&addrlen);
+
+	if (count > 0)
+	{
+		if (buf != NULL)
+		{
+			header = (MessageHeader*)buf;
+			body_len = ntohl(header->body_len);
+			tran_code = ntohl(header->tran_code);
+			TRACE("tran_code:%d, body_len:%d", tran_code, body_len);
+		}
+		Param param;
+		param.fd = fd;
+		param.pData = buf + HEADER_LEN;
+		param.tran_code = tran_code;
+		param.data_len = body_len;
+		param.wan_addr = remote;
+		TRACE("wanip:%s, wanport:%ld", inet_ntoa(remote.sin_addr),
+			ntohs(remote.sin_port));
+		ProcessData(param);
+	}
+
+	return count;
 }
 
 void MsgHandler::SendMessage(int fd, const string& json, int tranCode,
 		int retCode, int version, int checkCode)
 {
+	MessageHeader msg_header;
+	memset(&msg_header, 0, HEADER_LEN);
 
+	msg_header.tran_code = htonl(tranCode);
+	msg_header.retcode = htonl(retCode);
+	msg_header.version = htonl(version);
+	msg_header.check_code = htonl(checkCode);
+
+	const char *tmp = NULL;
+	int tmpLen = 0;
+	if (!json.empty())
+	{
+		tmp = json.c_str();
+		tmpLen = strlen(tmp);
+	}
+
+	msg_header.body_len = htonl(tmpLen);
+	int total_len = sizeof(msg_header)+tmpLen;
+	char *q = new char[total_len];
+	memset(q, 0, total_len);
+	memcpy(q, (char*)&msg_header, sizeof(msg_header));
+
+	if (tmpLen > 0)
+	{
+		memcpy(q + sizeof(msg_header), tmp, tmpLen);
+	}
+
+	TRACE("send msg fd: %d", fd);
+	if (fd != 0 && (send(fd, (char*)q, sizeof(msg_header)+tmpLen, 0) == -1))
+	{
+		TRACE("send error: %s", strerror(errno));
+	}
+	if (q != NULL)
+	{
+		delete[] q;
+		q = NULL;
+	}
 }
 
 void MsgHandler::SendUDPMessage(const Param& param)
 {
+	MessageHeader msg_header;
+	memset(&msg_header, 0, HEADER_LEN);
 
+	msg_header.tran_code = htonl(param.tran_code);
+
+	int tmpLen = strlen(param.pData);
+	msg_header.body_len = htonl(tmpLen);
+	int total_len = sizeof(msg_header)+tmpLen;
+	char *q = new char[total_len];
+	memset(q, 0, total_len);
+	memcpy(q, (char*)&msg_header, sizeof(msg_header));
+
+	if (tmpLen > 0)
+	{
+		memcpy(q + sizeof(msg_header), param.pData, tmpLen);
+	}
+
+	int addrlen = sizeof(struct sockaddr_in);
+	sendto(param.fd, q, sizeof(msg_header)+tmpLen, 0,
+		(sockaddr*)&param.wan_addr, (socklen_t)addrlen);
+
+	if (q != NULL)
+	{
+		delete[] q;
+		q = NULL;
+	}
 }
 
 void MsgHandler::GetClientAddr(int fd, char* addr)
