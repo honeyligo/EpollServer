@@ -1,4 +1,4 @@
 EpollServer
 ===========
 
-a server application implemented through nonblock IO, memcached and thread pool
+A server application implemented through nonblock IO epoll and thread pool 
