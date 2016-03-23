@@ -1,4 +1,0 @@
-2014/10/20 0:31:4  EpollServer.cpp:83 main -- tcp_port: 36299, udp_port: 36351, pool_size: 4,  pool_task: 4, timeout: 15, interval: 5
-
-2014/10/20 0:31:4  Server.cpp:53 Start -- this:0x0x7fa7faa66010
-
